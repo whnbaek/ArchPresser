@@ -104,7 +104,7 @@ class ArchPresser:
                     t = 1
                     while True:
                         res = interpolate_x(t)
-                        if res:
+                        if res is not None:
                             panoramic_image[yp][xp] += res
                             t += 1
                         else:
@@ -112,7 +112,7 @@ class ArchPresser:
                     t = 0
                     while True:
                         res = interpolate_x(t)
-                        if res:
+                        if res is not None:
                             panoramic_image[yp][xp] += res
                             t -= 1
                         else:
@@ -142,7 +142,7 @@ class ArchPresser:
                     t = 1
                     while True:
                         res = interpolate_y(t)
-                        if res:
+                        if res is not None:
                             panoramic_image[yp][xp] += res
                             t += 1
                         else:
@@ -150,7 +150,7 @@ class ArchPresser:
                     t = 0
                     while True:
                         res = interpolate_y(t)
-                        if res:
+                        if res is not None:
                             panoramic_image[yp][xp] += res
                             t -= 1
                         else:
