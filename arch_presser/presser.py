@@ -9,7 +9,7 @@ from scipy import interpolate
 
 from .decode import decode
 from .arch import Arch
-
+from . import ray_sum
 class ArchPresser:
     def __init__(self, dir_path: str = None, upper_start_points: List[Tuple[float, float, float]] = None,
                  lower_start_points: List[Tuple[float, float, float]] = None, 
@@ -142,142 +142,7 @@ class ArchPresser:
         
         # ray-sum
         print('[ray-sum]')
-        panoramic_image = np.zeros((self.hp, self.wp))
-        
-        for v in tqdm(range(self.hp)):
-            for u in range(self.wp):
-                x = xs[u, v]
-                y = ys[u, v]
-                z = v * self.pixel_size
-                nx = dydus[u, v] * self.pixel_size
-                ny = -dxdus[u, v] * self.pixel_size
-                nz = dxdus[u, v] * dydvs[u, v] - dydus[u, v] * dxdvs[u, v]
-                size = np.sqrt(nx * nx + ny * ny + nz * nz)
-                nx /= size
-                ny /= size
-                nz /= size
-                
-                if np.abs(nx) >= np.abs(ny) and np.abs(nx) >= np.abs(nz): # iterate x
-                    def interpolate_x(t: int) -> float | None:
-                        xt = int(x + t)
-                        yt = y + (xt - x) * ny / nx
-                        zt = z + (xt - x) * nz / nx
-                        if (xt - x) ** 2 + (yt - y) ** 2 + (zt - z) ** 2 > thickness ** 2 or (
-                           xt < 0 or xt >= w or yt < 0 or yt >= h or zt < 0 or zt >= d):
-                            return None
-                        
-                        # 0 <= xt < w
-                        y0 = int(yt) # 0 <= y0 < h 
-                        y1 = y0 + 1 # can be y1 >= h
-                        z0 = int(zt) # 0 <= z0 < d
-                        z1 = z0 + 1 # can be z1 >= d
-
-                        res = self.data[z0][y0][xt] * (z1 - zt) * (y1 - yt)
-                        if z1 < d:
-                            res += self.data[z1][y0][xt] * (zt - z0) * (y1 - yt)
-                        if y1 < h:
-                            res += self.data[z0][y1][xt] * (z1 - zt) * (yt - y0)
-                        if z1 < d and y1 < h:
-                            res += self.data[z1][y1][xt] * (zt - z0) * (yt - y0)
-                        return res
-                        
-                    t = 1
-                    while True:
-                        res = interpolate_x(t)
-                        if res is not None:
-                            panoramic_image[v][u] += res
-                            t += 1
-                        else:
-                            break
-                    t = 0
-                    while True:
-                        res = interpolate_x(t)
-                        if res is not None:
-                            panoramic_image[v][u] += res
-                            t -= 1
-                        else:
-                            break
-
-                elif np.abs(ny) >= np.abs(nx) and np.abs(ny) >= np.abs(nz): # iterate y
-                    def interpolate_y(t: int) -> float | None:
-                        yt = int(y + t)
-                        xt = x + (yt - y) * nx / ny
-                        zt = z + (yt - y) * nz / ny
-                        if (xt - x) ** 2 + (yt - y) ** 2 + (zt - z) ** 2 > thickness ** 2 or (
-                           xt < 0 or xt >= w or yt < 0 or yt >= h or zt < 0 or zt >= d):
-                            return None
-                        
-                        # 0 <= xt < w
-                        x0 = int(xt) # 0 <= y0 < h 
-                        x1 = x0 + 1 # can be y1 >= h
-                        z0 = int(zt) # 0 <= z0 < d
-                        z1 = z0 + 1 # can be z1 >= d
-
-                        res = self.data[z0][yt][x0] * (z1 - zt) * (x1 - xt)
-                        if z1 < d:
-                            res += self.data[z1][yt][x0] * (zt - z0) * (x1 - xt)
-                        if x1 < w:
-                            res += self.data[z0][yt][x1] * (z1 - zt) * (xt - x0)
-                        if z1 < d and x1 < w:
-                            res += self.data[z1][yt][x1] * (zt - z0) * (xt - x0)
-                        return res
-                        
-                    t = 1
-                    while True:
-                        res = interpolate_y(t)
-                        if res is not None:
-                            panoramic_image[v][u] += res
-                            t += 1
-                        else:
-                            break
-                    t = 0
-                    while True:
-                        res = interpolate_y(t)
-                        if res is not None:
-                            panoramic_image[v][u] += res
-                            t -= 1
-                        else:
-                            break
-                else: #iterate z
-                    def interpolate_z(t: int) -> float | None:
-                        zt = int(z + t)
-                        xt = x + (zt - z) * nx / nz
-                        yt = y + (zt - z) * ny / nz
-                        if (xt - x) ** 2 + (yt - y) ** 2 + (zt - z) ** 2 > thickness ** 2 or (
-                           xt < 0 or xt >= w or yt < 0 or yt >= h or zt < 0 or zt >= d):
-                            return None
-                        
-                        # 0 <= xt < w
-                        x0 = int(xt) # 0 <= x0 < w 
-                        x1 = x0 + 1 # can be x1 >= w
-                        y0 = int(yt) # 0 <= y0 < h 
-                        y1 = y0 + 1 # can be y1 >= h
-
-                        res = self.data[zt][y0][x0] * (y1 - yt) * (x1 - xt)
-                        if y1 < h:
-                            res += self.data[zt][y1][x0] * (yt - y0) * (x1 - xt)
-                        if x1 < w:
-                            res += self.data[zt][y0][x1] * (y1 - yt) * (xt - x0)
-                        if y1 < h and x1 < w:
-                            res += self.data[zt][y1][x1] * (yt - y0) * (xt - x0)
-                        return res
-                        
-                    t = 1
-                    while True:
-                        res = interpolate_z(t)
-                        if res is not None:
-                            panoramic_image[v][u] += res
-                            t += 1
-                        else:
-                            break
-                    t = 0
-                    while True:
-                        res = interpolate_z(t)
-                        if res is not None:
-                            panoramic_image[v][u] += res
-                            t -= 1
-                        else:
-                            break
+        panoramic_image=ray_sum.ray_sum(self.hp, self.wp, xs, ys, dxdus, dxdvs, dydus, dydvs, self.pixel_size, thickness, self.data)
 
         self.panoramic_image = panoramic_image
 
