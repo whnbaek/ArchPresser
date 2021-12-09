@@ -148,13 +148,13 @@ class ArchPresser:
 
         return self
 
-    def press(self, image_path: str, clamp: Tuple[float, float]) -> ArchPresser:
+    def press(self, image_path: str, clamp: float) -> ArchPresser:
         # parameter check
         assert self.panoramic_image is not None, 'panoramic image needed for pressing'
 
         # normalize
         image = self.panoramic_image
-        image = np.clip(image, clamp[0], clamp[1])
+        image = np.clip(image, None, clamp)
         image = (image - image.min()) * 255.0 / (image.max() - image.min())
         image = image.astype(np.uint8)
         
