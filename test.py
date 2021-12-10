@@ -24,7 +24,7 @@ def main():
     pixel_size = 1.0
     clamp = 150000.0
 
-    pkl_path = './pickle/{:.1f}_{:.1f}.pkl'.format(thickness, pixel_size)
+    pkl_path = './pickle/{:.1f}_{:.1f}_v3.pkl'.format(thickness, pixel_size)
     if os.path.isfile(pkl_path):
         with open(pkl_path, 'rb') as f:
             presser = pickle.load(f)
@@ -40,7 +40,7 @@ def main():
         with open(pkl_path, 'wb') as f:
             pickle.dump(presser, f)
 
-    image_path = './results/{:.1f}_{:.1f}_{:.1f}.png'.format(thickness, pixel_size, clamp)
+    image_path = './results/{:.1f}_{:.1f}_{:.1f}_v3.png'.format(thickness, pixel_size, clamp)
     _ = presser.press(image_path = image_path, clamp = clamp)
 
 if __name__ == '__main__':
